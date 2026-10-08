@@ -24,7 +24,8 @@ jobs:
         run: |
           wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip
           unzip -q gradle-8.2-bin.zip
-          export PATH="$PWD/gradle-8.2/bin:$PATH"
+          chmod +x gradle-8.2/bin/gradle
+          ./gradle-8.2/bin/gradle --version
 
           rm -rf app build.gradle settings.gradle gradle.properties
 
@@ -275,6 +276,98 @@ jobs:
                       val out = try {
                           val cmd = "cd /data/local/tmp && (echo 7; sleep 4; echo 2; sleep 2) | /system/bin/toybox script -q -c './Hijididi' /dev/null"
                           val p = ProcessBuilder("su", "-c", cmd)
+                              .redirectErrorStream(true).start()
+                          val text = p.inputStream.bufferedReader().readText()
+                          val code = p.waitFor()
+                          "$text\nexit=$code"
+                      } catch (e: Exception) {
+                          "Error: ${e.message}"
+                      }
+                      runOnUiThread { status.text = "HIJI DIDI Result:\n\n$out" }
+                  }.start()
+              }
+
+              private fun runTestBrutal() {
+                  status.text = "Running Brutal on Gucci_brutal..."
+                  Thread {
+                      val out = try {
+                          val cmd = "cd /data/local/tmp && (echo 2; sleep 4; echo 7; sleep 2) | ./Gucci_brutal"
+                          val p = ProcessBuilder("su", "-c", cmd)
+                              .redirectErrorStream(true).start()
+                          val text = p.inputStream.bufferedReader().readText()
+                          val code = p.waitFor()
+                          "$text\nexit=$code"
+                      } catch (e: Exception) {
+                          "Error: ${e.message}"
+                      }
+                      runOnUiThread { status.text = "Brutal Result:\n\n$out" }
+                  }.start()
+              }
+
+              override fun onDestroy() {
+                  status.text = ""
+                  super.onDestroy()
+              }
+          }
+          EOF
+
+          cat > app/src/main/res/layout/activity_main.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:padding="24dp"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+
+              <Button android:id="@+id/testSafeBtn"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:text="HIJI DIDI"/>
+
+              <Button android:id="@+id/testBrutalBtn"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:layout_marginTop="8dp"
+                  android:text="Test Brutal (Gucci_brutal)"/>
+
+              <TextView android:id="@+id/status"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:paddingTop="16dp"
+                  android:typeface="monospace"
+                  android:textSize="12sp"/>
+          </LinearLayout>
+          EOF
+
+          cat > app/src/main/res/drawable/ic_tile_normal.xml <<'EOF'
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="24dp" android:height="24dp"
+              android:viewportWidth="24" android:viewportHeight="24">
+              <path android:fillColor="#FFFFFFFF"
+                  android:pathData="M12,2L4,5v6c0,5.55 3.84,10.74 8,12 4.16,-1.26 8,-6.45 8,-12V5l-8,-3zM10.94,15.54l-3.4,-3.4 1.41,-1.41 1.99,1.99 4.24,-4.24 1.41,1.41 -5.65,5.65z"/>
+          </vector>
+          EOF
+
+          cat > app/src/main/res/drawable/ic_tile_brutal.xml <<'EOF'
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="24dp" android:height="24dp"
+              android:viewportWidth="24" android:viewportHeight="24">
+              <path android:fillColor="#FFFFFFFF"
+                  android:pathData="M7,2v11h3v9l7,-12h-4l4,-8z"/>
+          </vector>
+          EOF
+
+          cat > app/src/main/res/values/strings.xml <<'EOF'
+          <resources><string name="app_name">Settings</string></resources>
+          EOF
+
+          ./gradle-8.2/bin/gradle assembleDebug --no-daemon --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Settings-debug
+          path: app/build/outputs/apk/debug/app-debug.apk          val p = ProcessBuilder("su", "-c", cmd)
                               .redirectErrorStream(true).start()
                           val text = p.inputStream.bufferedReader().readText()
                           val code = p.waitFor()
